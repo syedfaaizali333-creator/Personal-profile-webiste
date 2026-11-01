@@ -1,27 +1,87 @@
 (() => {
   const $ = (s, root=document) => root.querySelector(s);
   const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-  // One welcome loader per browser tab. Internal navigation stays native,
-  // so a second overlay never appears between portfolio pages.
-  let showWelcomeLoader = false;
-  try {
-    showWelcomeLoader = sessionStorage.getItem('faaiz-welcome-shown') !== '1';
-    if (showWelcomeLoader) sessionStorage.setItem('faaiz-welcome-shown', '1');
-  } catch (_) { showWelcomeLoader = !window.__faaizWelcomeShown; window.__faaizWelcomeShown = true; }
+  const rootEl = document.documentElement;
 
-  if (showWelcomeLoader) {
-    const loader = document.createElement('div');
-    loader.className = 'site-loader';
-    loader.setAttribute('role', 'status');
-    loader.setAttribute('aria-live', 'polite');
-    loader.innerHTML = `<div class="loader-shell"><div class="loader-brand"><span class="loader-brand-mark">F.</span><span>FAAIZ<span class="loader-accent">.DEV</span></span></div><div class="loader-terminal"><div class="loader-terminal-top"><i></i><i></i><i></i><span>portfolio.boot.js</span></div><div class="loader-code"><p><span class="loader-muted">01</span> <b>const</b> portfolio = <em>"FAAIZ.DEV"</em>;</p><p><span class="loader-muted">02</span> <b>load</b>(<em>"projects and creativity"</em>);</p><p><span class="loader-muted">03</span> <b>render</b>(<em>"Welcome!"</em>);</p><p class="loader-success">✓ COMPLETE COMPILE <span>100%</span></p></div><div class="loader-progress"><span></span></div></div><div class="loader-status"><span class="loader-spinner"></span><span>Typing code · compiling portfolio</span><span class="loader-percent">100%</span></div><p class="loader-tagline">A little code. A lot of imagination.</p></div>`;
-    document.body.appendChild(loader);
-    let loaderClosed = false;
-    const hide = () => { if (loaderClosed) return; loaderClosed = true; loader.classList.add('loader-exit'); window.setTimeout(() => loader.remove(), 600); };
-    if (document.readyState === 'complete') window.setTimeout(hide, 5200);
-    else window.addEventListener('load', () => window.setTimeout(hide, 5400), { once: true });
-    window.setTimeout(hide, 6800);
-  }
+  /* ============================================================
+     Intro loading sequence
+     The loader markup ships inside every page, so it is on screen
+     from the very first paint — no waiting on JavaScript or fonts.
+     The inline <head> script gates it to the first open per browser
+     session (html[data-intro="on"]); this code then drives an eased
+     0→100 progress, shows COMPLETE, and lifts the curtain onto the
+     site with a smooth handover to the page entrance animations.
+     ============================================================ */
+  let experienceStarted = false;
+  const startExperience = () => {
+    if (experienceStarted) return;
+    experienceStarted = true;
+    const reveals = $$('.reveal');
+    if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const observer = new IntersectionObserver(entries => entries.forEach(entry => { if(entry.isIntersecting){entry.target.classList.add('is-visible');observer.unobserve(entry.target);} }), {threshold:.12,rootMargin:'0px 0px -25px 0px'});
+      reveals.forEach(el => observer.observe(el));
+    } else reveals.forEach(el => el.classList.add('is-visible'));
+  };
+
+  const introLoader = $('#intro-loader');
+  const introPlaying = Boolean(introLoader) && rootEl.dataset.intro === 'on';
+  if (introLoader && !introPlaying) introLoader.remove();
+
+  const runIntro = () => {
+    const fill = $('#intro-bar-fill', introLoader);
+    const percent = $('#intro-percent', introLoader);
+    const status = $('#intro-status', introLoader);
+    if (!fill || !percent || !status) { introLoader.remove(); rootEl.dataset.intro = 'off'; startExperience(); return; }
+
+    const DURATION = 2400; // eased 0→100 progress timeline (ms)
+    const HOLD = 620;      // beat on "COMPLETE" before the curtain lifts
+    const LABELS = [[0,'Initializing'],[.2,'Loading projects'],[.45,'Styling interface'],[.72,'Compiling experience'],[.94,'Finalizing']];
+    // Organic progress keyframes so the count feels like real loading.
+    const KEYS = [[0,0],[.1,6],[.24,19],[.38,31],[.52,46],[.66,62],[.79,77],[.9,89],[.96,96],[1,100]];
+    const easeInOut = t => t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+    const progressAt = te => {
+      for (let i = 1; i < KEYS.length; i++) {
+        if (te <= KEYS[i][0]) {
+          const [t0,v0] = KEYS[i-1], [t1,v1] = KEYS[i];
+          return v0 + (v1 - v0) * ((te - t0) / Math.max(t1 - t0, 1e-6));
+        }
+      }
+      return 100;
+    };
+
+    let exiting = false;
+    const beginExit = () => {
+      if (exiting) return;
+      exiting = true;
+      introLoader.classList.add('is-exiting');
+      rootEl.dataset.intro = 'done';          // releases the page entrance animations
+      rootEl.classList.add('intro-finished'); // skips the one-time portrait boot cinematic
+      startExperience();
+      window.setTimeout(() => introLoader.remove(), 1050);
+    };
+    const finish = () => {
+      fill.style.transform = 'scaleX(1)';
+      percent.textContent = '100%';
+      status.textContent = 'Complete';
+      introLoader.classList.add('is-complete');
+      window.setTimeout(beginExit, HOLD);
+    };
+
+    const startedAt = performance.now();
+    const frame = now => {
+      const t = Math.min((now - startedAt) / DURATION, 1);
+      const v = progressAt(easeInOut(t));
+      fill.style.transform = `scaleX(${(v / 100).toFixed(4)})`;
+      percent.textContent = `${Math.floor(v)}%`;
+      let label = LABELS[0][1];
+      for (const [at, text] of LABELS) if (t >= at) label = text;
+      if (status.textContent !== label) status.textContent = label;
+      if (t < 1) requestAnimationFrame(frame); else finish();
+    };
+    requestAnimationFrame(frame);
+  };
+
+  if (introPlaying) runIntro(); else startExperience();
 
   // The home portrait is an interactive two-sided card: portrait <-> source code.
   const portraitFlip = $('.portrait-flip');
@@ -48,11 +108,6 @@
   };
   addEventListener('scroll', onScroll, {passive:true}); onScroll();
   if (back) back.addEventListener('click', () => scrollTo({top:0,behavior:'smooth'}));
-  const reveals = $$('.reveal');
-  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const observer = new IntersectionObserver(entries => entries.forEach(entry => { if(entry.isIntersecting){entry.target.classList.add('is-visible');observer.unobserve(entry.target);} }), {threshold:.12,rootMargin:'0px 0px -25px 0px'});
-    reveals.forEach(el => observer.observe(el));
-  } else reveals.forEach(el => el.classList.add('is-visible'));
   const filterButtons = $$('.filter-btn');
   filterButtons.forEach(btn => btn.addEventListener('click', () => {
     filterButtons.forEach(b=>b.classList.toggle('active', b===btn));
@@ -138,8 +193,7 @@
     $$('.fz-quick button', widget).forEach(b=>b.addEventListener('click',()=>ask(b.dataset.fz)));
   }
 
-
-  // Persistent appearance preferences: theme, motion and assistant visibility.
+  // Persistent appearance preferences: theme (system-aware) and motion intensity.
   const preferenceKey = 'faaiz-preferences';
   let prefs = {};
   try { prefs = JSON.parse(localStorage.getItem(preferenceKey) || '{}') || {}; } catch (_) { prefs = {}; }
@@ -147,32 +201,78 @@
   const resolveTheme = choice => choice === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : choice;
   const applyTheme = choice => {
     const resolved = resolveTheme(choice);
-    document.documentElement.dataset.theme = resolved;
-    document.documentElement.dataset.themeChoice = choice;
+    rootEl.dataset.theme = resolved;
+    rootEl.dataset.themeChoice = choice;
     localStorage.setItem('faaiz-theme', choice);
     prefs.theme = choice; localStorage.setItem(preferenceKey, JSON.stringify(prefs));
     const meta = $('meta[name="theme-color"]'); if (meta) meta.content = resolved === 'light' ? '#f4f7fb' : '#07111f';
   };
   applyTheme(savedTheme);
-  const motionChoice = prefs.motion || 'cinematic';
-  document.documentElement.dataset.motion = motionChoice;
-  const settings = document.createElement('div'); settings.className = 'site-settings';
-  settings.innerHTML = `<button class="settings-trigger" type="button" aria-label="Open appearance settings" aria-expanded="false" title="Appearance settings">⚙</button><section class="settings-panel" hidden aria-label="Appearance settings"><div class="settings-heading"><div><span class="eyebrow">Personalize</span><h3>Experience settings</h3></div><button class="settings-close" type="button" aria-label="Close settings">×</button></div><label class="setting-row"><span><b>Theme</b><small>Choose your preferred appearance</small></span><select id="pref-theme"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label><label class="setting-row"><span><b>Motion</b><small>Control animation intensity</small></span><select id="pref-motion"><option value="cinematic">Cinematic</option><option value="normal">Normal</option><option value="reduced">Reduced</option></select></label><label class="setting-check"><span><b>Show portfolio assistant</b><small>Display the Faaiz AI guide</small></span><input id="pref-assistant" type="checkbox" checked></label><p class="settings-foot">Preferences are saved in this browser.</p></section>`;
-  document.body.appendChild(settings);
-  const trigger = $('.settings-trigger', settings), panelSettings = $('.settings-panel', settings);
-  const closeSettings = () => { panelSettings.hidden = true; trigger.setAttribute('aria-expanded','false'); };
-  trigger.addEventListener('click', () => { panelSettings.hidden = !panelSettings.hidden; trigger.setAttribute('aria-expanded', String(!panelSettings.hidden)); });
-  $('.settings-close', settings).addEventListener('click', closeSettings);
-  const themeSelect = $('#pref-theme', settings), motionSelect = $('#pref-motion', settings), assistantToggle = $('#pref-assistant', settings);
-  themeSelect.value = savedTheme; motionSelect.value = motionChoice;
-  themeSelect.addEventListener('change', () => applyTheme(themeSelect.value));
-  const applyMotion = choice => { document.documentElement.dataset.motion = choice; prefs.motion = choice; localStorage.setItem(preferenceKey, JSON.stringify(prefs)); };
-  motionSelect.addEventListener('change', () => applyMotion(motionSelect.value));
-  assistantToggle.checked = prefs.assistant !== false;
-  const assistantWidget = $('#fz-widget');
-  if (assistantWidget && !assistantToggle.checked) assistantWidget.hidden = true;
-  assistantToggle.addEventListener('change', () => { prefs.assistant = assistantToggle.checked; localStorage.setItem(preferenceKey, JSON.stringify(prefs)); const w = $('#fz-widget'); if(w) w.hidden = !assistantToggle.checked; });
+  rootEl.dataset.motion = prefs.motion || 'cinematic';
   if (matchMedia('(prefers-color-scheme: light)').addEventListener) matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if ((localStorage.getItem('faaiz-theme') || 'system') === 'system') applyTheme('system'); });
 
+  /* ============================================================
+     Custom cursor — basith.dev-style
+     A precise dot locked to the pointer plus a trailing ring that
+     follows with eased lag (rAF lerp). The ring grows over links,
+     buttons and other interactive elements; both compress while
+     pressed. Only activates on fine-pointer devices; touch users
+     and reduced-motion visitors keep the native pointer.
+     ============================================================ */
+  const initCustomCursor = () => {
+    if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if ($('.cursor-ring')) return;
+
+    const dot = document.createElement('div');
+    dot.className = 'cursor-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    const ring = document.createElement('div');
+    ring.className = 'cursor-ring';
+    ring.setAttribute('aria-hidden', 'true');
+    document.body.append(dot, ring);
+    rootEl.classList.add('cursor-active');
+
+    let x = innerWidth / 2, y = innerHeight / 2; // exact pointer position
+    let ringX = x, ringY = y;                    // eased ring position
+    let ringScale = 1, dotScale = 1;
+    let ringTarget = 1, dotTarget = 1;
+    let hovering = false, pressing = false, shown = false;
+
+    const INTERACTIVE = 'a, button, input, textarea, select, label, summary, [role="button"], .portrait-flip';
+    const setTargets = () => {
+      ringTarget = pressing ? .8 : hovering ? 1.7 : 1;
+      dotTarget = pressing ? .75 : hovering ? .5 : 1;
+      ring.classList.toggle('is-hover', hovering);
+      dot.classList.toggle('is-hover', hovering);
+    };
+
+    addEventListener('pointermove', e => {
+      x = e.clientX; y = e.clientY;
+      if (!shown) { shown = true; ringX = x; ringY = y; dot.classList.add('is-visible'); ring.classList.add('is-visible'); }
+    }, { passive: true });
+
+    document.addEventListener('pointerover', e => {
+      hovering = !!(e.target.closest && e.target.closest(INTERACTIVE));
+      setTargets();
+    });
+    addEventListener('pointerdown', () => { pressing = true; setTargets(); });
+    addEventListener('pointerup', () => { pressing = false; setTargets(); });
+    addEventListener('pointercancel', () => { pressing = false; setTargets(); });
+    document.addEventListener('mouseleave', () => { shown = false; dot.classList.remove('is-visible'); ring.classList.remove('is-visible'); });
+    addEventListener('blur', () => { shown = false; dot.classList.remove('is-visible'); ring.classList.remove('is-visible'); });
+
+    const tick = () => {
+      ringX += (x - ringX) * .16;   // the ring trails with a soft eased lag
+      ringY += (y - ringY) * .16;
+      ringScale += (ringTarget - ringScale) * .18;
+      dotScale += (dotTarget - dotScale) * .32;
+      dot.style.transform = `translate3d(${x}px,${y}px,0) translate(-50%,-50%) scale(${dotScale.toFixed(3)})`;
+      ring.style.transform = `translate3d(${ringX.toFixed(1)}px,${ringY.toFixed(1)}px,0) translate(-50%,-50%) scale(${ringScale.toFixed(3)})`;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+  initCustomCursor();
 
 })();
