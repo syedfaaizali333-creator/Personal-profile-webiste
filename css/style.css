@@ -249,3 +249,102 @@ html.cursor-active,html.cursor-active *{cursor:none!important}
 @keyframes landPulse{0%{box-shadow:0 0 0 1px rgba(0,207,255,.6),0 0 72px rgba(0,110,255,.55),0 35px 95px rgba(0,0,0,.42)}100%{box-shadow:0 0 0 1px rgba(0,207,255,.28),0 0 42px rgba(0,110,255,.33),0 35px 95px rgba(0,0,0,.42)}}
 :root[data-theme="light"] .portrait-frame.portrait-landed{box-shadow:0 0 0 1px rgba(0,110,255,.25),0 0 34px rgba(0,110,255,.18),0 25px 60px rgba(0,26,61,.12)}
 @media(prefers-reduced-motion:reduce){.portrait-frame.portrait-landed{animation:none}.intro-clone{transition:none}}
+
+/* ============================================================
+   FAAIZ.DEV 2.0 — Developer terminal, GitHub integration,
+   coding playground, assistant upgrades, misc interactions
+   ============================================================ */
+/* --- Interactive terminal section --- */
+.terminal-window{border:1px solid rgba(0,207,255,.24);border-radius:18px;background:linear-gradient(160deg,rgba(0,24,52,.96),rgba(0,18,40,.94));box-shadow:var(--shadow);overflow:hidden;max-width:820px}
+.terminal-top{height:40px;display:flex;align-items:center;gap:7px;padding:0 15px;border-bottom:1px solid rgba(217,226,236,.09);background:rgba(255,255,255,.025)}
+.terminal-top i{width:8px;height:8px;border-radius:50%;background:#ff727d}
+.terminal-top i:nth-child(2){background:#ffd36c}
+.terminal-top i:nth-child(3){background:#53e1f3}
+.terminal-top span{margin-left:8px;color:#8fa6c4;font:10px 'DM Mono',monospace}
+.terminal-body{height:min(320px,46vh);overflow:auto;padding:17px 17px 9px;font:12.5px/1.85 'DM Mono',monospace;color:#cfe2f2}
+.terminal-line{white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 3px}
+.terminal-line.cmd{color:#fff}
+.terminal-line.cmd:before{content:"visitor@faaiz.dev:~$ ";color:#00cfff}
+.terminal-line.sys{color:#7e97b5}
+.terminal-line.ok{color:#7fe7ff}
+.terminal-line.err{color:#ff9aa2}
+.terminal-line a{color:#00cfff;text-decoration:underline;text-underline-offset:3px}
+.terminal-input-row{display:flex;align-items:center;gap:10px;padding:12px 17px;border-top:1px solid rgba(217,226,236,.09);background:rgba(255,255,255,.015)}
+.terminal-prompt{flex:0 0 auto;color:#00cfff;font:12.5px 'DM Mono',monospace;white-space:nowrap}
+#terminal-input{flex:1;min-width:0;border:0;background:transparent;color:#fff;font:12.5px 'DM Mono',monospace;outline:none;caret-color:#00cfff}
+/* --- GitHub integration --- */
+.github-stats{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px}
+.gh-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font:11px 'DM Mono',monospace;color:#cfe2f2;background:rgba(255,255,255,.025)}
+.gh-chip b{color:#00cfff;font-weight:600}
+.gh-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.gh-repo{display:flex;flex-direction:column;gap:9px;padding:19px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012));transition:transform .25s,border-color .25s,box-shadow .25s}
+.gh-repo:hover{transform:translateY(-4px);border-color:rgba(0,207,255,.4);box-shadow:0 18px 42px rgba(0,0,0,.18)}
+.gh-repo-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.gh-repo-top h3{font-size:14.5px;letter-spacing:-.02em;color:var(--text);margin:0;overflow-wrap:anywhere}
+.gh-lang{display:inline-flex;align-items:center;gap:6px;font:10px 'DM Mono',monospace;color:#a9bfd5}
+.gh-lang i{width:9px;height:9px;border-radius:50%;background:var(--gh-color,#00cfff);display:inline-block}
+.gh-repo p{font-size:11.5px;line-height:1.7;margin:0;color:#a9bfd5;flex:1}
+.gh-meta{display:flex;gap:14px;font:10px 'DM Mono',monospace;color:#8fa6c4}
+.gh-meta b{color:#cfe2f2;font-weight:600}
+.gh-link{font-size:11px;font-weight:700;color:#00cfff}
+.gh-state{padding:26px;border:1px dashed var(--line);border-radius:16px;text-align:center;color:#a9bfd5;font-size:12px}
+.gh-state a{color:#00cfff;font-weight:700}
+.gh-state.error{border-color:rgba(255,122,133,.4);color:#ffb9be}
+.gh-fork{font:9px 'DM Mono',monospace;color:#8fa6c4;border:1px solid var(--line);border-radius:999px;padding:3px 7px}
+/* --- Coding playground --- */
+.playground-wrap{margin-top:8px}
+.pg-app{display:grid;grid-template-columns:1.05fr .95fr;gap:16px;align-items:stretch}
+.pg-pane{border:1px solid var(--line);border-radius:18px;background:linear-gradient(160deg,rgba(0,24,52,.96),rgba(0,18,40,.94));overflow:hidden;display:flex;flex-direction:column;min-height:430px}
+.pg-tabs{display:flex;gap:6px;padding:10px 12px 0;border-bottom:1px solid rgba(217,226,236,.09);background:rgba(255,255,255,.02)}
+.pg-tab{border:1px solid transparent;border-bottom:0;background:transparent;color:#a9bfd5;font:11px 'DM Mono',monospace;letter-spacing:.06em;padding:9px 14px;border-radius:10px 10px 0 0;cursor:pointer}
+.pg-tab[aria-selected="true"]{color:#00cfff;border-color:rgba(217,226,236,.14);background:rgba(0,18,40,.92)}
+.pg-editor{flex:1;width:100%;resize:none;border:0;outline:none;padding:16px;background:transparent;color:#dbe9f7;font:12.5px/1.75 'DM Mono',monospace;tab-size:2;white-space:pre;overflow:auto;display:none}
+.pg-editor.is-active{display:block}
+.pg-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid rgba(217,226,236,.09);background:rgba(255,255,255,.02)}
+.pg-run{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:9px 17px;font:800 11px Manrope,sans-serif;letter-spacing:.04em;color:#001a3d;background:linear-gradient(115deg,#006eff,#00cfff);cursor:pointer;box-shadow:0 8px 22px rgba(0,110,255,.3)}
+.pg-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font:600 11px Manrope,sans-serif;color:#cfe2f2;background:rgba(255,255,255,.03);cursor:pointer;transition:border-color .2s,color .2s}
+.pg-btn:hover{border-color:rgba(0,207,255,.45);color:#00cfff}
+.pg-template{margin-left:auto;border:1px solid var(--line);border-radius:10px;background:rgba(0,18,40,.9);color:#cfe2f2;font:11px Manrope,sans-serif;padding:8px 10px}
+.pg-preview{width:100%;flex:1;border:0;background:#fff}
+.pg-console{flex:0 0 132px;border-top:1px solid rgba(217,226,236,.09);background:rgba(0,10,24,.7);display:flex;flex-direction:column;min-height:0}
+.pg-console-head{padding:8px 14px;font:9px 'DM Mono',monospace;letter-spacing:.14em;color:#7e97b5;border-bottom:1px solid rgba(217,226,236,.07)}
+.pg-console-lines{flex:1;overflow:auto;padding:9px 14px;font:11px/1.7 'DM Mono',monospace;color:#b9cde0}
+.pg-console-line{margin:0 0 2px;white-space:pre-wrap;overflow-wrap:anywhere}
+.pg-console-line.err{color:#ff9aa2}
+.pg-console-line.ok{color:#7fe7ff}
+.pg-console-line.info{color:#7e97b5}
+.pg-status{padding:8px 14px;font:10px 'DM Mono',monospace;color:#7e97b5}
+@media(max-width:900px){.pg-app{grid-template-columns:1fr}.pg-pane{min-height:360px}.gh-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.gh-grid{grid-template-columns:1fr}.pg-console{flex-basis:110px}.pg-template{margin-left:0;width:100%}}
+/* --- AI assistant upgrades --- */
+.fz-typing{display:inline-flex;gap:4px;align-items:center;padding:12px 13px}
+.fz-typing i{width:6px;height:6px;border-radius:50%;background:#7e97b5;animation:fzBlink 1.1s infinite}
+.fz-typing i:nth-child(2){animation-delay:.18s}
+.fz-typing i:nth-child(3){animation-delay:.36s}
+@keyframes fzBlink{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}
+.fz-suggest{display:flex;flex-wrap:wrap;gap:6px;padding:0 4px 8px}
+.fz-suggest button{font-size:9.5px;padding:6px 10px;border-radius:999px;background:rgba(0,207,255,.06);border:1px solid rgba(0,207,255,.22);color:#00cfff;cursor:pointer;text-align:left}
+.fz-suggest button:hover{background:rgba(0,207,255,.14)}
+.fz-message a.fz-answer-link{display:inline-block;margin-top:7px;padding:6px 11px;border:1px solid rgba(0,207,255,.3);border-radius:999px}
+/* --- Light theme adjustments for new components --- */
+:root[data-theme="light"] .terminal-window,:root[data-theme="light"] .pg-pane{background:#fff;border-color:rgba(0,26,61,.15)}
+:root[data-theme="light"] .terminal-body{color:#1c3a5e}
+:root[data-theme="light"] .terminal-line.sys{color:#5a7694}
+:root[data-theme="light"] .terminal-line.cmd{color:#001a3d}
+:root[data-theme="light"] .terminal-top,:root[data-theme="light"] .pg-tabs,:root[data-theme="light"] .pg-toolbar{background:rgba(0,26,61,.03)}
+:root[data-theme="light"] .pg-editor{color:#12294a}
+:root[data-theme="light"] .pg-console{background:rgba(0,26,61,.045)}
+:root[data-theme="light"] .pg-console-lines{color:#3d5a7a}
+:root[data-theme="light"] .gh-chip{color:#2c4a6a}
+:root[data-theme="light"] .gh-repo p{color:#3d5a7a}
+:root[data-theme="light"] .gh-meta,:root[data-theme="light"] .gh-lang,:root[data-theme="light"] .gh-fork{color:#5a7694}
+:root[data-theme="light"] .gh-state{color:#3d5a7a}
+:root[data-theme="light"] .pg-tab{color:#3d5a7a}
+:root[data-theme="light"] .pg-tab[aria-selected="true"]{color:#0053cc;background:#fff}
+:root[data-theme="light"] .pg-template{background:#fff;color:#12294a}
+:root[data-theme="light"] .pg-btn{color:#12294a}
+:root[data-theme="light"] .fz-typing i{background:#5a7694}
+.skill-note{margin:12px 0 0;font-size:11px;line-height:1.7;color:#8fa6c4}
+.skill-note a{color:#00cfff;font-weight:600;border-bottom:1px dotted rgba(0,207,255,.4)}
+:root[data-theme="light"] .skill-note{color:#3d5a7a}
+.timeline-item .num[title],.timeline-item .num{white-space:nowrap}
