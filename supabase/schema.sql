@@ -3,6 +3,7 @@ create table if not exists public.messages (
   name text not null check (char_length(name) between 1 and 120),
   email text not null check (char_length(email) between 3 and 254),
   message text not null check (char_length(message) between 1 and 5000),
+  subject text check (subject is null or char_length(subject) between 1 and 150),
   created_at timestamptz not null default now()
 );
 alter table public.messages enable row level security;
