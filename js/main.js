@@ -4,13 +4,11 @@
   const rootEl = document.documentElement;
 
   /* ============================================================
-     Intro loading sequence
-     The loader markup ships inside every page, so it is on screen
-     from the very first paint — no waiting on JavaScript or fonts.
-     The inline <head> script gates it to the first open per browser
-     session (html[data-intro="on"]); this code then drives an eased
-     0→100 progress, shows COMPLETE, and lifts the curtain onto the
-     site with a smooth handover to the page entrance animations.
+     Cinematic intro: code initialization -> code builds the
+     portrait (particles sampled from the real photograph) ->
+     COMPLETE COMPILE -> continuous handoff into the homepage.
+     The loader markup ships inside every page; the inline <head>
+     script gates it to the first open per browser session.
      ============================================================ */
   let experienceStarted = false;
   const startExperience = () => {
@@ -27,58 +25,202 @@
   const introPlaying = Boolean(introLoader) && rootEl.dataset.intro === 'on';
   if (introLoader && !introPlaying) introLoader.remove();
 
-  const runIntro = () => {
+  const wait = ms => new Promise(r => window.setTimeout(r, ms));
+  const clamp01 = v => Math.max(0, Math.min(1, v));
+  const easeInOut = t => (t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2);
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+  // Subtle electric-blue glow around the hero portrait (all visit types).
+  const heroImg = document.querySelector('.portrait-photo img');
+  const heroFrame = heroImg ? heroImg.closest('.portrait-frame') : null;
+  if (!introPlaying && heroFrame) heroFrame.classList.add('portrait-landed');
+
+  const runIntro = async () => {
     const fill = $('#intro-bar-fill', introLoader);
     const percent = $('#intro-percent', introLoader);
     const status = $('#intro-status', introLoader);
+    const stage = $('.intro-stage', introLoader);
     if (!fill || !percent || !status) { introLoader.remove(); rootEl.dataset.intro = 'off'; startExperience(); return; }
 
-    const DURATION = 2400; // eased 0→100 progress timeline (ms)
-    const HOLD = 620;      // beat on "COMPLETE" before the curtain lifts
-    const LABELS = [[0,'Initializing'],[.2,'Loading projects'],[.45,'Styling interface'],[.72,'Compiling experience'],[.94,'Finalizing']];
-    // Organic progress keyframes so the count feels like real loading.
-    const KEYS = [[0,0],[.1,6],[.24,19],[.38,31],[.52,46],[.66,62],[.79,77],[.9,89],[.96,96],[1,100]];
-    const easeInOut = t => t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
-    const progressAt = te => {
-      for (let i = 1; i < KEYS.length; i++) {
-        if (te <= KEYS[i][0]) {
-          const [t0,v0] = KEYS[i-1], [t1,v1] = KEYS[i];
-          return v0 + (v1 - v0) * ((te - t0) / Math.max(t1 - t0, 1e-6));
+    const isHome = Boolean(heroImg);
+    if (!isHome && stage) stage.remove(); // the portrait phase is home-only
+
+    // Start fetching the photograph immediately so it decodes while the
+    // terminal types (phase 2 begins with the image already in memory).
+    const photoSrc = isHome ? (heroImg.currentSrc || heroImg.src) : '';
+    const photo = isHome ? document.createElement('img') : null;
+    if (photo) {
+      photo.alt = '';
+      photo.className = 'intro-portrait';
+      photo.src = photoSrc;
+      try { photo.decode && photo.decode().catch(() => {}); } catch (_) {}
+    }
+    const decodePhoto = img => {
+      try {
+        const pr = img.decode ? img.decode() : Promise.resolve();
+        return Promise.race([pr.catch(() => {}), wait(700)]);
+      } catch (_) { return Promise.resolve(); }
+    };
+
+    const setProgress = v => { const q = clamp01(v); fill.style.transform = `scaleX(${q.toFixed(4)})`; percent.textContent = `${Math.floor(q * 100)}%`; };
+    const setStatus = t => { if (status.textContent !== t) status.textContent = t; };
+
+    /* ---- Phase 1: coding initialization ---- */
+    const CODE_MS = isHome ? 1600 : 2050;
+    setStatus('Initializing');
+    await new Promise(done => {
+      const t0 = performance.now();
+      const frame = now => {
+        const t = clamp01((now - t0) / CODE_MS);
+        setProgress(easeInOut(t) * (isHome ? .38 : .92));
+        setStatus(t < .3 ? 'Initializing' : t < .72 ? 'Loading assets' : isHome ? 'Preparing portrait' : 'Compiling experience');
+        t < 1 ? requestAnimationFrame(frame) : done();
+      };
+      requestAnimationFrame(frame);
+    });
+
+    /* ---- Phase 2: code builds the portrait (home only) ---- */
+    if (isHome && stage) {
+      introLoader.classList.add('is-materializing');
+      setStatus('Compiling portrait');
+      // Size the stage from the hero photo box so the handoff is seamless.
+      const rect = heroImg.getBoundingClientRect();
+      const ratio = rect.width > 4 && rect.height > 4 ? rect.height / rect.width : 1.07;
+      const maxW = Math.min(rect.width > 4 ? rect.width : 380, innerWidth * .82, 400);
+      const maxH = Math.min(innerHeight * .5, 430);
+      let w = maxW, h = w * ratio;
+      if (h > maxH) { h = maxH; w = h / ratio; }
+      w = Math.round(w); h = Math.round(h);
+      stage.style.width = `${w}px`;
+      stage.style.height = `${h}px`; // expands smoothly (CSS transition), no layout jump
+      const canvas = document.createElement('canvas');
+      canvas.className = 'intro-canvas';
+      const scan = document.createElement('span');
+      scan.className = 'intro-scanline';
+      stage.append(canvas, photo, scan);
+      stage.hidden = false;
+      await decodePhoto(photo); // usually instant: fetched during phase 1
+
+      const MATERIAL_MS = 1700;
+      await new Promise(done => {
+        stage.classList.add('is-active');
+        const matStart = performance.now();
+        let particlesDone = false;
+        // Progress/status driver for this phase.
+        const prog = now => {
+          if (particlesDone) return;
+          const t = clamp01((now - matStart) / MATERIAL_MS);
+          setProgress(.38 + .52 * easeInOut(t));
+          setStatus(t > .86 ? 'Finalizing' : 'Compiling portrait');
+          if (t < 1) requestAnimationFrame(prog);
+        };
+        requestAnimationFrame(prog);
+        // Particle engine: sample the real photograph, converge pixels.
+        try {
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('no 2d');
+          const dpr = Math.min(devicePixelRatio || 1, 2);
+          canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+          ctx.scale(dpr, dpr);
+          const G = w < 360 ? 44 : 60;
+          const off = document.createElement('canvas');
+          off.width = G; off.height = G;
+          const octx = off.getContext('2d');
+          octx.drawImage(photo, 0, 0, G, G);
+          const data = octx.getImageData(0, 0, G, G).data;
+          const cellW = w / G, cellH = h / G;
+          const parts = [];
+          for (let gy = 0; gy < G; gy++) {
+            for (let gx = 0; gx < G; gx++) {
+              const k = (gy * G + gx) * 4;
+              if (data[k + 3] < 40) continue;
+              const ang = Math.random() * Math.PI * 2;
+              const rad = (.3 + Math.random() * .5) * Math.max(w, h) * .55;
+              parts.push({
+                tx: gx * cellW + cellW / 2, ty: gy * cellH + cellH / 2,
+                sx: w / 2 + Math.cos(ang) * rad, sy: h / 2 + Math.sin(ang) * rad,
+                delay: (gy / G) * .5 + Math.random() * .12, // scan downward, top rows first
+                r: Math.min(cellW, cellH) * .5 + Math.random() * .4,
+                c: `${data[k]},${data[k + 1]},${data[k + 2]}`
+              });
+            }
+          }
+          const t0 = performance.now();
+          const frame = now => {
+            const t = clamp01((now - t0) / MATERIAL_MS);
+            ctx.clearRect(0, 0, w, h);
+            for (const pt of parts) {
+              const p = clamp01((t - pt.delay) / .62);
+              if (p <= 0) continue;
+              const e = easeOutCubic(p);
+              ctx.globalAlpha = p < .85 ? .95 : clamp01((1 - p) * 6.5); // dissolve as the photo takes over
+              if (ctx.globalAlpha <= 0.02) continue;
+              ctx.fillStyle = `rgb(${pt.c})`;
+              ctx.fillRect(pt.sx + (pt.tx - pt.sx) * e - pt.r / 2, pt.sy + (pt.ty - pt.sy) * e - pt.r / 2, pt.r, pt.r);
+            }
+            ctx.globalAlpha = 1;
+            if (t > .48) stage.classList.add('is-emerging'); // real photograph fades in beneath
+            if (t < 1) requestAnimationFrame(frame);
+            else { ctx.clearRect(0, 0, w, h); particlesDone = true; done(); }
+          };
+          requestAnimationFrame(frame);
+        } catch (_) {
+          // Graceful fallback (no canvas / tainted file:// canvas): photo still materializes.
+          particlesDone = true;
+          window.setTimeout(() => stage.classList.add('is-emerging'), MATERIAL_MS * .4);
+          window.setTimeout(() => { setProgress(.9); done(); }, MATERIAL_MS);
         }
+      });
+      stage.classList.add('is-materialized');
+    } else {
+      await new Promise(done => {
+        const t0 = performance.now();
+        const frame = now => {
+          const t = clamp01((now - t0) / 450);
+          setProgress(.92 + .08 * t);
+          t < 1 ? requestAnimationFrame(frame) : done();
+        };
+        requestAnimationFrame(frame);
+      });
+    }
+
+    /* ---- Phase 3: COMPLETE COMPILE ---- */
+    setProgress(1);
+    setStatus('Complete');
+    introLoader.classList.add('is-complete');
+    await wait(isHome ? 800 : 650);
+
+    /* ---- Phase 4: continuous handoff into the homepage ---- */
+    rootEl.dataset.intro = 'done';      // releases the hero entrance animations
+    rootEl.classList.add('intro-finished');
+    startExperience();
+    let clone = null;
+    if (isHome && stage && heroFrame) {
+      const from = stage.getBoundingClientRect();
+      const to = heroImg.getBoundingClientRect();
+      if (from.width > 4 && to.width > 4) {
+        clone = document.createElement('div');
+        clone.className = 'intro-clone';
+        clone.setAttribute('aria-hidden', 'true');
+        clone.style.width = `${from.width}px`;
+        clone.style.height = `${from.height}px`;
+        clone.style.left = `${from.left}px`;
+        clone.style.top = `${from.top}px`;
+        clone.innerHTML = `<img alt="" src="${photoSrc}">`;
+        document.body.appendChild(clone);
+        stage.style.visibility = 'hidden'; // one image travels, no duplicate flash
+        const dx = to.left - from.left, dy = to.top - from.top;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          clone.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${(to.width / from.width).toFixed(4)}, ${(to.height / from.height).toFixed(4)})`;
+        }));
       }
-      return 100;
-    };
-
-    let exiting = false;
-    const beginExit = () => {
-      if (exiting) return;
-      exiting = true;
-      introLoader.classList.add('is-exiting');
-      rootEl.dataset.intro = 'done';          // releases the page entrance animations
-      rootEl.classList.add('intro-finished'); // skips the one-time portrait boot cinematic
-      startExperience();
-      window.setTimeout(() => introLoader.remove(), 1050);
-    };
-    const finish = () => {
-      fill.style.transform = 'scaleX(1)';
-      percent.textContent = '100%';
-      status.textContent = 'Complete';
-      introLoader.classList.add('is-complete');
-      window.setTimeout(beginExit, HOLD);
-    };
-
-    const startedAt = performance.now();
-    const frame = now => {
-      const t = Math.min((now - startedAt) / DURATION, 1);
-      const v = progressAt(easeInOut(t));
-      fill.style.transform = `scaleX(${(v / 100).toFixed(4)})`;
-      percent.textContent = `${Math.floor(v)}%`;
-      let label = LABELS[0][1];
-      for (const [at, text] of LABELS) if (t >= at) label = text;
-      if (status.textContent !== label) status.textContent = label;
-      if (t < 1) requestAnimationFrame(frame); else finish();
-    };
-    requestAnimationFrame(frame);
+    }
+    introLoader.classList.add('is-exiting'); // curtain lifts while the clone flies down
+    window.setTimeout(() => {
+      if (clone) clone.remove();
+      if (heroFrame) heroFrame.classList.add('portrait-landed');
+      introLoader.remove();
+    }, 1000);
   };
 
   if (introPlaying) runIntro(); else startExperience();
