@@ -2,6 +2,13 @@
 
 A responsive, multi-page portfolio built with HTML5, CSS3 and vanilla JavaScript. The visual direction is inspired by common modern developer-portfolio patterns: clear hero, about section, skills, project cards, case studies, credentials, resume and contact. The reference is used for structure/inspiration only; this website uses its own styling and Faaiz's development-related content.
 
+## Design system
+- **Theme:** Dark Navy × Electric Blue. Dark mode is the default experience.
+- **Palette:** Dark Navy `#001A3D` · Deep Blue `#003B7A` · Electric Blue `#006EFF` · Cyan `#00CFFF` · White `#FFFFFF` · Light Gray `#D9E2EC`. Exactly two accent colors (electric blue + cyan); other values are shades/tints of them.
+- **Light/dark toggle:** sun/moon button in the navbar on every page; the explicit choice is saved in `localStorage` and survives reloads.
+- **Fonts:** exactly two families — Manrope (UI) + DM Mono (code/labels).
+- **Accessibility:** WCAG AA contrast targets, including AA-safe accent shades in light mode (`#0053CC` blue text, `#0077B3` cyan text), focus-visible outlines, semantic landmarks, and `prefers-reduced-motion` support throughout.
+
 ## Pages
 - `index.html` — Home, intro, capability summary, featured projects, skills, process, certificate highlight, contact form
 - `about.html` — Developer profile and learning journey
@@ -34,9 +41,11 @@ Open `index.html` in a browser for basic content. For the best results use a sta
 
 ## Recent interaction and visual updates
 - Blue-only F. logo accent stays consistent during the loader and on the site.
+- **Full design-system pass:** every color on the site now derives from the specified Dark Navy × Electric Blue palette; old one-off blues/cyans/limes were consolidated into the two accents.
+- **Light/dark toggle:** new navbar toggle (dark default). The previous "system" preference falls back to dark.
 - **Professional intro sequence:** the boot loader ships inside every page, so it is on screen from the very first paint. It plays once per browser session, animates an eased 0→100% progress with rotating status labels, shows a "✓ COMPLETE" badge at 100%, then lifts away like a curtain while the hero content staggers in. Skipped automatically for repeat visits in the same session and for visitors who prefer reduced motion.
 - **Basith.dev-style custom cursor:** a precise dot locked to the pointer plus a trailing ring that follows with eased lag (rAF/lerp). The ring grows over links, buttons and form fields, compresses while pressed, and hides when the pointer leaves the window. Desktop/fine-pointer only — touch devices and reduced-motion users keep the native pointer.
-- **Settings gear removed:** the floating appearance/settings button and its panel are gone; the theme still follows the system preference (or the previously saved choice).
+- **Settings gear removed:** the floating appearance/settings button and its panel are gone (replaced by the simple navbar theme toggle).
 - Home navigation is through the FAAIZ.DEV logo; the separate Home nav item is removed.
 - Faaiz AI assistant has a draggable mascot/launcher and draggable panel header; quick prompt buttons are wired correctly.
 - Case-study pages now include available assignment visuals: RAASTAGO and Aversion University screenshots, the iHub design board, and TravelNest/headphone design mockups. FAAIZ.DEV uses bespoke illustrative artwork because a screenshot of the live portfolio project was not in the available assets.

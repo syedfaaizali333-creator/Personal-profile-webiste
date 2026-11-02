@@ -197,19 +197,36 @@
   const preferenceKey = 'faaiz-preferences';
   let prefs = {};
   try { prefs = JSON.parse(localStorage.getItem(preferenceKey) || '{}') || {}; } catch (_) { prefs = {}; }
-  const savedTheme = localStorage.getItem('faaiz-theme') || prefs.theme || 'system';
-  const resolveTheme = choice => choice === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : choice;
+  // Dark mode is the default experience; the toggle stores the explicit choice.
+  const savedTheme = localStorage.getItem('faaiz-theme') === 'light' ? 'light' : 'dark';
   const applyTheme = choice => {
-    const resolved = resolveTheme(choice);
-    rootEl.dataset.theme = resolved;
-    rootEl.dataset.themeChoice = choice;
+    rootEl.dataset.theme = choice;
     localStorage.setItem('faaiz-theme', choice);
     prefs.theme = choice; localStorage.setItem(preferenceKey, JSON.stringify(prefs));
-    const meta = $('meta[name="theme-color"]'); if (meta) meta.content = resolved === 'light' ? '#f4f7fb' : '#07111f';
+    const meta = $('meta[name="theme-color"]'); if (meta) meta.content = choice === 'light' ? '#ffffff' : '#001a3d';
+    const btn = $('.theme-toggle');
+    if (btn) {
+      const label = choice === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('title', label);
+    }
   };
   applyTheme(savedTheme);
   rootEl.dataset.motion = prefs.motion || 'cinematic';
-  if (matchMedia('(prefers-color-scheme: light)').addEventListener) matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if ((localStorage.getItem('faaiz-theme') || 'system') === 'system') applyTheme('system'); });
+
+  // Header light/dark toggle (sun/moon icon follows the current mode).
+  const navInner = $('.nav-inner');
+  if (navInner && !$('.theme-toggle', navInner)) {
+    const themeBtn = document.createElement('button');
+    themeBtn.type = 'button';
+    themeBtn.className = 'theme-toggle';
+    themeBtn.setAttribute('aria-label', 'Toggle dark / light theme');
+    themeBtn.innerHTML = '<svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M4.8 4.8l1.6 1.6M17.6 17.6l1.6 1.6M19.2 4.8l-1.6 1.6M6.4 17.6l-1.6 1.6"/></svg><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 14.2A8.6 8.6 0 0 1 9.8 3.4a8.6 8.6 0 1 0 10.8 10.8Z"/></svg>';
+    const menuBtn = $('.menu-toggle', navInner);
+    navInner.insertBefore(themeBtn, menuBtn);
+    themeBtn.addEventListener('click', () => applyTheme(rootEl.dataset.theme === 'light' ? 'dark' : 'light'));
+    applyTheme(savedTheme);
+  }
 
   /* ============================================================
      Custom cursor — basith.dev-style
